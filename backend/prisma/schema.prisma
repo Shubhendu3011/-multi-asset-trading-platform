@@ -79,6 +79,7 @@ model Asset {
   // Relations
   priceHistory    PriceHistory[]
   orders          Order[]
+  portfolios      Portfolio[]
   watchlists      Watchlist[]
 
   @@map("assets")

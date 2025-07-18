@@ -8,7 +8,7 @@ export interface User {
   lastName?: string;
   isEmailVerified: boolean;
   isKycVerified: boolean;
-  role: 'USER' | 'ADMIN' | 'MODERATOR' | 'TRADER';
+  role: string;
   createdAt: string;
 }
 

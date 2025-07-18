@@ -1,0 +1,1 @@
+import React from "react"; import { Typography, Box } from "@mui/material"; const HomePage = () => { return <Box><Typography variant="h1">Welcome to Trading Platform</Typography></Box>; }; export default HomePage;

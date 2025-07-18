@@ -1,0 +1,1 @@
+import React from "react"; import { Typography, Box } from "@mui/material"; const DashboardPage = () => { return <Box><Typography variant="h1">Dashboard</Typography></Box>; }; export default DashboardPage;

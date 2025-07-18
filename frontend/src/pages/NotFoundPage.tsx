@@ -1,0 +1,1 @@
+import React from "react"; import { Typography, Box } from "@mui/material"; const NotFoundPage = () => { return <Box><Typography variant="h1">404 - Not Found</Typography></Box>; }; export default NotFoundPage;

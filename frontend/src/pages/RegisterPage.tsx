@@ -1,0 +1,1 @@
+import React from "react"; import { Typography, Box } from "@mui/material"; const RegisterPage = () => { return <Box><Typography variant="h1">Register Page</Typography></Box>; }; export default RegisterPage;

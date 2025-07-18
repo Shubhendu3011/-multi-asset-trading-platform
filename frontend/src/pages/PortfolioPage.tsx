@@ -1,0 +1,1 @@
+import React from "react"; import { Typography, Box } from "@mui/material"; const PortfolioPage = () => { return <Box><Typography variant="h1">Portfolio</Typography></Box>; }; export default PortfolioPage;

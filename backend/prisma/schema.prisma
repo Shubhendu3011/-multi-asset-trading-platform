@@ -1,0 +1,225 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile management
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  passwordHash      String
+  firstName         String?
+  lastName          String?
+  phone             String?
+  dateOfBirth       DateTime?
+  isEmailVerified   Boolean  @default(false)
+  isPhoneVerified   Boolean  @default(false)
+  isKycVerified     Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  role              UserRole @default(USER)
+  twoFactorSecret   String?
+  twoFactorEnabled  Boolean  @default(false)
+  lastLoginAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  portfolios        Portfolio[]
+  orders            Order[]
+  transactions      Transaction[]
+  watchlists        Watchlist[]
+  sessions          Session[]
+
+  @@map("users")
+}
+
+// User roles for authorization
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+  TRADER
+}
+
+// User sessions for JWT management
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Asset model for cryptocurrencies and stocks
+model Asset {
+  id              String      @id @default(cuid())
+  symbol          String      @unique
+  name            String
+  type            AssetType
+  currentPrice    Decimal     @db.Decimal(20, 8)
+  marketCap       Decimal?    @db.Decimal(20, 2)
+  volume24h       Decimal?    @db.Decimal(20, 2)
+  change24h       Decimal?    @db.Decimal(10, 4)
+  isActive        Boolean     @default(true)
+  metadata        Json?       // Additional asset-specific data
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  priceHistory    PriceHistory[]
+  orders          Order[]
+  watchlists      Watchlist[]
+
+  @@map("assets")
+}
+
+// Asset types
+enum AssetType {
+  CRYPTO
+  STOCK
+  FOREX
+  COMMODITY
+}
+
+// Price history for assets
+model PriceHistory {
+  id        String   @id @default(cuid())
+  assetId   String
+  price     Decimal  @db.Decimal(20, 8)
+  volume    Decimal? @db.Decimal(20, 2)
+  timestamp DateTime @default(now())
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("price_history")
+  @@index([assetId, timestamp])
+}
+
+// Portfolio model for user holdings
+model Portfolio {
+  id        String   @id @default(cuid())
+  userId    String
+  assetId   String
+  quantity  Decimal  @db.Decimal(20, 8)
+  avgPrice  Decimal  @db.Decimal(20, 8)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assetId])
+  @@map("portfolios")
+}
+
+// Order model for trading orders
+model Order {
+  id            String      @id @default(cuid())
+  userId        String
+  assetId       String
+  type          OrderType
+  side          OrderSide
+  quantity      Decimal     @db.Decimal(20, 8)
+  price         Decimal?    @db.Decimal(20, 8) // null for market orders
+  status        OrderStatus @default(PENDING)
+  filledQuantity Decimal    @default(0) @db.Decimal(20, 8)
+  filledPrice   Decimal?    @db.Decimal(20, 8)
+  stopLoss      Decimal?    @db.Decimal(20, 8)
+  takeProfit    Decimal?    @db.Decimal(20, 8)
+  expiresAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset         Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+
+  @@map("orders")
+  @@index([userId, status])
+  @@index([assetId, status])
+}
+
+// Order types
+enum OrderType {
+  MARKET
+  LIMIT
+  STOP_LOSS
+  TAKE_PROFIT
+  STOP_LIMIT
+}
+
+// Order sides
+enum OrderSide {
+  BUY
+  SELL
+}
+
+// Order status
+enum OrderStatus {
+  PENDING
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+  EXPIRED
+}
+
+// Transaction model for completed trades
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  orderId       String?
+  assetId       String
+  type          TransactionType
+  quantity      Decimal  @db.Decimal(20, 8)
+  price         Decimal  @db.Decimal(20, 8)
+  fee           Decimal  @default(0) @db.Decimal(20, 8)
+  total         Decimal  @db.Decimal(20, 8)
+  timestamp     DateTime @default(now())
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order         Order?   @relation(fields: [orderId], references: [id])
+
+  @@map("transactions")
+  @@index([userId, timestamp])
+  @@index([assetId, timestamp])
+}
+
+// Transaction types
+enum TransactionType {
+  BUY
+  SELL
+  DEPOSIT
+  WITHDRAWAL
+  FEE
+  DIVIDEND
+  AIRDROP
+}
+
+// Watchlist model for user's favorite assets
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  assetId   String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assetId])
+  @@map("watchlists")
+} 
